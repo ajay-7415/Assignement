@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,13 +8,24 @@ import axios from "axios";
 const BASE_URL = "https://reqres.in/api/users";
 const LOGIN_URL = "https://reqres.in/api/login";
 
-export default function App() {
-  const [token, setToken] = useState(localStorage.getItem("token"));
+interface User {
+  id: number;
+  first_name: string;
+  last_name: string;
+  email: string;
+  avatar: string;
+}
 
+export default function App() {
+  const [token, setToken] = useState<string | null>(localStorage.getItem("token"));
   return token ? <UserManagement /> : <Login setToken={setToken} />;
 }
 
-function Login({ setToken }) {
+interface LoginProps {
+  setToken: (token: string) => void;
+}
+
+function Login({ setToken }: LoginProps) {
   const [email, setEmail] = useState("eve.holt@reqres.in");
   const [password, setPassword] = useState("cityslicka");
   const [error, setError] = useState("");
@@ -45,33 +56,38 @@ function Login({ setToken }) {
 }
 
 function UserManagement() {
-  const [users, setUsers] = useState([]);
+  const [users, setUsers] = useState<User[]>([]);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const [editingUser, setEditingUser] = useState(null);
-  const [editData, setEditData] = useState({ first_name: "", last_name: "", email: "" });
+  const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [editData, setEditData] = useState<Omit<User, "id" | "avatar">>({ first_name: "", last_name: "", email: "" });
   const [error, setError] = useState("");
+
+  const fetchUsers = useCallback(async () => {
+    try {
+      const response = await axios.get(`${BASE_URL}?page=${page}`);
+      setUsers(response.data.data);
+      setTotalPages(response.data.total_pages);
+    } catch (err) {
+      setError("Failed to fetch users.");
+    }
+  }, [page]);
 
   useEffect(() => {
     fetchUsers();
-  }, [page]);
+  }, [fetchUsers]);
 
-  const fetchUsers = async () => {
-    const response = await axios.get(`${BASE_URL}?page=${page}`);
-    setUsers(response.data.data);
-    setTotalPages(response.data.total_pages);
-  };
-
-  const handleEdit = (user) => {
-    setEditingUser(user.id);
+  const handleEdit = (user: User) => {
+    setEditingUser(user);
     setEditData({ first_name: user.first_name, last_name: user.last_name, email: user.email || "" });
   };
 
   const handleUpdate = async () => {
+    if (!editingUser) return;
     try {
-      const response = await axios.put(`${BASE_URL}/${editingUser}`, editData);
+      const response = await axios.put(`${BASE_URL}/${editingUser.id}`, editData);
       if (response.status === 200) {
-        setUsers(prevUsers => prevUsers.map(user => user.id === editingUser ? { ...user, ...editData } : user));
+        setUsers((prevUsers) => prevUsers.map((user) => (user.id === editingUser.id ? { ...user, ...editData } : user)));
         setEditingUser(null);
         setError("");
       }
@@ -80,17 +96,16 @@ function UserManagement() {
     }
   };
 
-  const handleDelete = async (id) => {
+  const handleDelete = async (id: number) => {
     try {
       await axios.delete(`${BASE_URL}/${id}`);
-      setUsers(users.filter(user => user.id !== id));
+      setUsers((prevUsers) => prevUsers.filter((user) => user.id !== id));
     } catch (err) {
       alert("Failed to delete user");
     }
   };
 
   return (
-    <>
     <div className="p-4">
       <h1 className="text-xl font-bold mb-4">User Management</h1>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -118,7 +133,7 @@ function UserManagement() {
         <Button onClick={() => setPage(page + 1)} disabled={page === totalPages}>Next</Button>
       </div>
       {editingUser && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black">
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
           <Card className="p-6 w-96 bg-white">
             <CardContent>
               <h2 className="text-xl font-bold mb-4">Edit User</h2>
@@ -127,12 +142,11 @@ function UserManagement() {
               <Input placeholder="Last Name" value={editData.last_name} onChange={(e) => setEditData({ ...editData, last_name: e.target.value })} className="mb-2" />
               <Input placeholder="Email" value={editData.email} onChange={(e) => setEditData({ ...editData, email: e.target.value })} className="mb-4" />
               <Button onClick={handleUpdate} className="w-full mb-2">Update</Button>
-              <Button onClick={() => setEditingUser(null)} variant="destructive" className="w-full text-black">Cancel</Button>
+              <Button onClick={() => setEditingUser(null)} variant="destructive" className="w-full">Cancel</Button>
             </CardContent>
           </Card>
         </div>
       )}
     </div>
-    </>
   );
 }
