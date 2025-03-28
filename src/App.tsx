@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -61,15 +61,14 @@ function UserManagement() {
   const [totalPages, setTotalPages] = useState(1);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [editData, setEditData] = useState<Omit<User, "id" | "avatar">>({ first_name: "", last_name: "", email: "" });
-  const [error, setError] = useState("");
 
   const fetchUsers = useCallback(async () => {
     try {
       const response = await axios.get(`${BASE_URL}?page=${page}`);
       setUsers(response.data.data as User[]);
       setTotalPages(response.data.total_pages);
-    } catch (err) {
-      setError("Failed to fetch users.");
+    } catch {
+      console.error("Failed to fetch users.");
     }
   }, [page]);
 
@@ -89,10 +88,9 @@ function UserManagement() {
       if (response.status === 200) {
         setUsers((prevUsers: User[]) => prevUsers.map((user) => (user.id === editingUser.id ? { ...user, ...editData } : user)));
         setEditingUser(null);
-        setError("");
       }
-    } catch (err) {
-      setError("Failed to update user. Please try again.");
+    } catch {
+      console.error("Failed to update user.");
     }
   };
 
@@ -100,7 +98,7 @@ function UserManagement() {
     try {
       await axios.delete(`${BASE_URL}/${id}`);
       setUsers((prevUsers: User[]) => prevUsers.filter((user) => user.id !== id));
-    } catch (err) {
+    } catch {
       alert("Failed to delete user");
     }
   };
@@ -132,17 +130,16 @@ function UserManagement() {
         <span>Page {page} of {totalPages}</span>
         <Button onClick={() => setPage(page + 1)} disabled={page === totalPages}>Next</Button>
       </div>
-       {editingUser && (
-  <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
+      {editingUser && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
           <Card className="p-6 w-96 bg-white">
             <CardContent>
               <h2 className="text-xl font-bold mb-4">Edit User</h2>
-              {error && <p className="text-red-500">{error}</p>}
               <Input placeholder="First Name" value={editData.first_name} onChange={(e) => setEditData({ ...editData, first_name: e.target.value })} className="mb-2" />
               <Input placeholder="Last Name" value={editData.last_name} onChange={(e) => setEditData({ ...editData, last_name: e.target.value })} className="mb-2" />
               <Input placeholder="Email" value={editData.email} onChange={(e) => setEditData({ ...editData, email: e.target.value })} className="mb-4" />
               <Button onClick={handleUpdate} className="w-full mb-2">Update</Button>
-              <Button onClick={() => setEditingUser(null)} variant="destructive" className="w-full">Cancel</Button>
+              <Button onClick={() => setEditingUser(null)} variant="destructive" className="w-full text-black">Cancel</Button>
             </CardContent>
           </Card>
         </div>
