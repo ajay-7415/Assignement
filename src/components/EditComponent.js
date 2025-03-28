@@ -1,8 +1,5 @@
-import React from 'react'
-
-const EditComponent = () => {
-  return (
-    <div className="fixed inset-0 flex items-center justify-center bg-black">
+ {editingUser && (
+  <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
           <Card className="p-6 w-96 bg-white">
             <CardContent>
               <h2 className="text-xl font-bold mb-4">Edit User</h2>
@@ -15,7 +12,4 @@ const EditComponent = () => {
             </CardContent>
           </Card>
         </div>
-  )
-}
-
-export default EditComponent
+      )}
