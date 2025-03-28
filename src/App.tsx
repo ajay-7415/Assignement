@@ -117,7 +117,7 @@ function UserManagement() {
                   <p className="text-sm text-gray-600">{user.email || "No email"}</p>
                   <div className="flex gap-2 mt-2">
                     <Button onClick={() => handleEdit(user)} size="sm">Edit</Button>
-                    <Button onClick={() => handleDelete(user.id)} size="sm" variant="destructive">Delete</Button>
+                    <Button onClick={() => handleDelete(user.id)} size="sm" >Delete</Button>
                   </div>
                 </div>
               </CardContent>
